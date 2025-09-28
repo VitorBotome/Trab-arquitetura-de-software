@@ -1,0 +1,47 @@
+### list cart
+
+GET http://localhost:3000/cart
+
+###GET product
+GET http://localhost:3000/cart/1
+
+### Create 
+POST http://localhost:3000/cart
+Content-Type: application/json
+
+{
+    "name": "arthur",
+  "email": "arthur@gmail.com",
+  "orderDate":"2025-02-01",
+  "items": [
+    {
+      "product": "Camisa",
+      "price": 100,
+      "quantity": 2
+    },
+    {
+      "product": "Bolsa",
+      "price": 250,
+      "quantity": 1
+    }
+  ]
+}
+
+### Update
+PATCH  http://localhost:3000/cart/1
+Content-Type: application/json
+
+{
+  "name": "Joao",
+  "items": [
+    {
+      "product": "Camisa",
+      "price": 120,
+      "quantity": 3
+    }
+  ]
+}
+
+
+### Delete
+DELETE http://localhost:3000/cart/1
