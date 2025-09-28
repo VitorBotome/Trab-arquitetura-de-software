@@ -8,7 +8,8 @@ export class CartService {
   private carts: Cart[] = [];
   private nextId = 1;
 
-  create(createCartDto: CreateCartDto): Cart {
+  async create(createCartDto: CreateCartDto): Promise<Cart>  {
+    await new Promise(resolve => setTimeout(resolve, 2000));
     const total = createCartDto.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,

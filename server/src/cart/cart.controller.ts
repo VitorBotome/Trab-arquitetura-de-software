@@ -8,8 +8,8 @@ export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Post()
-  create(@Body() createCartDto: CreateCartDto) {
-    return this.cartService.create(createCartDto);
+  async create(@Body() createCartDto: CreateCartDto) {
+    return await this.cartService.create(createCartDto);
   }
 
   @Get()
