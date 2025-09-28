@@ -1,0 +1,10 @@
+config:
+  target: 'http://localhost:3000'   # URL da API
+  phases:
+    - duration: 60                  # duração do teste em segundos (1 minuto)
+      arrivalRate: 10               # número de usuários por segundo
+
+scenarios:
+  - flow:
+      - get:
+          url: "/products"          # endpoint a ser testado

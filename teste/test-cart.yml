@@ -1,0 +1,21 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30         # duração do teste
+      arrivalRate: 5       # 5 usuários por segundo
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - flow:
+      - post:
+          url: "/cart"
+          json:
+            name: "Teste Usuário"
+            email: "teste@email.com"
+            orderDate: "2025-09-28T19:45:00Z"
+            items:
+              - product: "Camisa"
+                price: 50
+                quantity: 1
