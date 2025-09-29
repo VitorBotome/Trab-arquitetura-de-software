@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Body } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Body, Query } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { RedisService } from '../cache/redis.service';
 
@@ -16,9 +16,17 @@ export class ProductsController {
   ) {}
 
   @Get()
-  async findAll() {
+  async findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('fields') fields?: string,
+  ) {
     const startTime = Date.now();
-    const products = await this.productsService.findAll();
+    const products = await this.productsService.findAll(
+      page ? parseInt(page) : undefined,
+      limit ? parseInt(limit) : undefined,
+      fields,
+    );
     const endTime = Date.now();
 
     return {

@@ -1,0 +1,12 @@
+config:
+  target: "http://localhost:3000"
+phases:
+  - duration: 30
+    arrivalRate: 5
+processor: "./functions.js"  
+scenarios:
+  - name: baseline-get-products-miss
+    flow:
+      - get:
+          url: "/products?page=1&limit=50&fields=id,name,price"
+

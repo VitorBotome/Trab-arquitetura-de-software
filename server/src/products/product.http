@@ -1,3 +1,6 @@
+# Instalar extensão REST Client para testar rotas
+
+
 ### 1. Listar produtos (Cache MISS)
 GET http://localhost:3000/products
 

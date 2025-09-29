@@ -3,6 +3,7 @@ import { CreateCartDto } from './dto/create-cart.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
 import { Cart } from './entities/cart.entity';
 import { RedisService } from '../cache/redis.service';
+import { AddCartItemDto } from './dto/add-cart-item.dto';
 
 @Injectable()
 export class CartService {
@@ -28,12 +29,12 @@ export class CartService {
       total,
     };
 
-    // 🔹 Simula latência e salva carrinho no Redis
+    //  Simula latência e salva carrinho no Redis
     await new Promise((resolve) => setTimeout(resolve, 50));
     const cartKey = `cart:${newCart.id}`;
     await this.redisService.set(cartKey, newCart, 0);
 
-    // 🔹 Atualiza lista de IDs
+    //  Atualiza lista de IDs
     const cartsListKey = 'carts:list';
     const existingCarts = (await this.redisService.get(cartsListKey)) || [];
     existingCarts.push(newCart.id);
@@ -169,5 +170,66 @@ export class CartService {
       memoryUsage: `Redis armazenando ${carts.length} carrinhos`,
       cacheKeys: cartIds.map((id) => `cart:${id}`).concat(['carts:list']),
     };
+  }
+
+  async addItem(dto: AddCartItemDto, simulatedDelayMs: number = 800): Promise<Cart> {
+    const startTime = Date.now();
+
+    // Simula processamento pesado
+    await new Promise((resolve) => setTimeout(resolve, simulatedDelayMs));
+
+    let cartId = dto.cartId && dto.cartId > 0 ? dto.cartId : 0;
+    let cart: Cart | undefined;
+
+    if (!cartId) {
+      // criar novo carrinho
+      const createDto: CreateCartDto = {
+        name: dto.productName || 'Cliente',
+        email: 'cliente@example.com',
+        orderDate: new Date().toISOString().slice(0, 10),
+        items: [],
+      } as any;
+      cart = await this.create(createDto);
+      cartId = cart.id;
+    } else {
+      cart = await this.findOne(cartId) as Cart | undefined;
+      if (!cart) {
+        // se id informado não existir, cria novo
+        const createDto: CreateCartDto = {
+          name: dto.productName || 'Cliente',
+          email: 'cliente@example.com',
+          orderDate: new Date().toISOString().slice(0, 10),
+          items: [],
+        } as any;
+        cart = await this.create(createDto);
+        cartId = cart.id;
+      }
+    }
+
+    const newItem = {
+      product: dto.productName || `Product ${dto.productId}`,
+      price: dto.price,
+      quantity: dto.quantity,
+    } as any;
+
+    cart.items = [...cart.items, newItem];
+    cart.total = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    // Atualiza cache
+    const cartKey = `cart:${cartId}`;
+    await this.redisService.set(cartKey, cart, 0);
+
+    const cartsListKey = 'carts:list';
+    const cartIds = (await this.redisService.get(cartsListKey)) || [];
+    if (!cartIds.includes(cartId)) {
+      cartIds.push(cartId);
+      await this.redisService.set(cartsListKey, cartIds, 0);
+    }
+
+    console.log(
+      `✅ Item adicionado ao carrinho ${cartId} em ${Date.now() - startTime}ms (delay simulado: ${simulatedDelayMs}ms)`,
+    );
+
+    return cart;
   }
 }

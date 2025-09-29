@@ -17,25 +17,47 @@ export class ProductsService {
     { id: '3', name: 'Product 3', price: 300 },
   ];
 
-  async findAll(): Promise<Product[]> {
-    const cacheKey = 'products:all';
+  async findAll(page?: number, limit?: number, fields?: string): Promise<Product[]> {
+    // Normaliza parâmetros
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Math.min(100, Number(limit) || 10));
+    const fieldsKey = (fields || '').trim();
+
+    const cacheKey = `products:all:page=${pageNum}:limit=${limitNum}:fields=${fieldsKey || 'all'}`;
     
     // Tenta buscar do cache primeiro
     const cachedProducts = await this.redisService.get(cacheKey);
     if (cachedProducts) {
-      console.log('✅ Cache HIT: Lista de produtos encontrada no Redis');
+      console.log('✅ Cache HIT: Lista de produtos (paginado) encontrada no Redis');
       return cachedProducts;
     }
 
-    // Cache MISS - busca dos dados originais
+    // Cache MISS - pagina e seleciona campos
     console.log('❌ Cache MISS: Buscando lista de produtos no banco de dados');
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    // Salva no cache para próximas consultas
-    await this.redisService.set(cacheKey, this.products, 600); // 10 minutos
-    console.log('💾 Lista de produtos salva no Redis');
+    // Paginação em memória
+    const start = (pageNum - 1) * limitNum;
+    const end = start + limitNum;
+    let pageItems: any[] = this.products.slice(start, end);
 
-    return this.products;
+    // Seleção de campos
+    if (fieldsKey) {
+      const requested = new Set(fieldsKey.split(',').map((s) => s.trim()).filter(Boolean));
+      pageItems = pageItems.map((p) => {
+        const selected: any = {};
+        for (const key of requested) {
+          if (key in p) selected[key] = (p as any)[key];
+        }
+        return selected;
+      });
+    }
+
+    // Salva no cache para próximas consultas (10 min)
+    await this.redisService.set(cacheKey, pageItems, 600);
+    console.log('💾 Lista de produtos (paginado) salva no Redis');
+
+    return pageItems as Product[];
   }
 
   async findOne(id: string): Promise<Product | undefined> {

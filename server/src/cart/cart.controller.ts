@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { CartService } from './cart.service';
 import { CreateCartDto } from './dto/create-cart.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
+import { AddCartItemDto } from './dto/add-cart-item.dto';
 
 @Controller('cart')
 export class CartController {
@@ -103,5 +104,19 @@ export class CartController {
   @Get('stats/cache')
   async getCacheStats() {
     return await this.cartService.getCacheStats();
+  }
+
+  @Post('add')
+  async addItem(@Body() dto: AddCartItemDto) {
+    const startTime = Date.now();
+    const result = await this.cartService.addItem(dto, 800);
+    const endTime = Date.now();
+
+    return {
+      ...result,
+      responseTime: `${endTime - startTime}ms`,
+      message: 'Item adicionado ao carrinho no Redis',
+      storedIn: 'Redis Cloud'
+    };
   }
 }

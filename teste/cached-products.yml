@@ -1,0 +1,17 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 10
+      arrivalRate: 1
+    - pause: 2
+    - duration: 30
+      arrivalRate: 10
+scenarios:
+  - name: warmup-and-hit-cache
+    flow:
+      - get:
+          url: "/products?page=1&limit=50&fields=id,name,price"
+      - think: 1
+      - get:
+          url: "/products?page=1&limit=50&fields=id,name,price"
+
