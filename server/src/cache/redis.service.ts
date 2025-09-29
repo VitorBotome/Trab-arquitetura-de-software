@@ -43,8 +43,13 @@ export class RedisService {
   async set(key: string, value: any, ttl: number = 3600): Promise<void> {
     try {
       const serializedValue = JSON.stringify(value);
-      await this.client.setEx(key, ttl, serializedValue);
-      console.log(`💾 Chave ${key} salva no Redis (TTL: ${ttl}s)`);
+      if (ttl && ttl > 0) {
+        await this.client.setEx(key, ttl, serializedValue);
+        console.log(`💾 Chave ${key} salva no Redis (TTL: ${ttl}s)`);
+      } else {
+        await this.client.set(key, serializedValue);
+        console.log(`💾 Chave ${key} salva no Redis (sem expiração)`);
+      }
     } catch (error) {
       console.error(`❌ Erro ao salvar chave ${key}:`, error);
     }

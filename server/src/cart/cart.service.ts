@@ -1,15 +1,14 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
+import { Injectable } from '@nestjs/common';
 import { CreateCartDto } from './dto/create-cart.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
 import { Cart } from './entities/cart.entity';
+import { RedisService } from '../cache/redis.service';
 
 @Injectable()
 export class CartService {
   private nextId = 1;
 
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+  constructor(private readonly redisService: RedisService) {}
 
   async create(createCartDto: CreateCartDto): Promise<Cart> {
     console.log('🔄 Criando novo carrinho no Redis...');
@@ -29,16 +28,16 @@ export class CartService {
       total,
     };
 
-    // 🔹 Salva carrinho no Redis
+    // 🔹 Simula latência e salva carrinho no Redis
+    await new Promise((resolve) => setTimeout(resolve, 50));
     const cartKey = `cart:${newCart.id}`;
-    await this.cacheManager.set(cartKey, newCart, 0);
+    await this.redisService.set(cartKey, newCart, 0);
 
     // 🔹 Atualiza lista de IDs
     const cartsListKey = 'carts:list';
-    const existingCarts =
-      (await this.cacheManager.get<number[]>(cartsListKey)) || [];
+    const existingCarts = (await this.redisService.get(cartsListKey)) || [];
     existingCarts.push(newCart.id);
-    await this.cacheManager.set(cartsListKey, existingCarts, 0);
+    await this.redisService.set(cartsListKey, existingCarts, 0);
 
     console.log(
       `✅ Carrinho ${newCart.id} criado e salvo no Redis em ${
@@ -54,14 +53,13 @@ export class CartService {
     const startTime = Date.now();
 
     const cartsListKey = 'carts:list';
-    const cartIds =
-      (await this.cacheManager.get<number[]>(cartsListKey)) || [];
+    const cartIds = (await this.redisService.get(cartsListKey)) || [];
 
     console.log(`📋 IDs de carrinhos encontrados: ${cartIds.join(', ')}`);
 
     const carts: Cart[] = [];
     for (const id of cartIds) {
-      const cart = await this.cacheManager.get<Cart>(`cart:${id}`);
+      const cart = await this.redisService.get(`cart:${id}`);
       if (cart) carts.push(cart);
     }
 
@@ -79,7 +77,7 @@ export class CartService {
     const startTime = Date.now();
 
     const cartKey = `cart:${id}`;
-    const cart = await this.cacheManager.get<Cart>(cartKey);
+    const cart = await this.redisService.get(cartKey);
 
     if (cart) {
       console.log(
@@ -99,7 +97,7 @@ export class CartService {
     const startTime = Date.now();
 
     const cartKey = `cart:${id}`;
-    const existingCart = await this.cacheManager.get<Cart>(cartKey);
+    const existingCart = await this.redisService.get(cartKey);
 
     if (!existingCart) {
       console.log(`❌ Carrinho ${id} não encontrado para atualização`);
@@ -118,7 +116,8 @@ export class CartService {
       );
     }
 
-    await this.cacheManager.set(cartKey, updatedCart, 0);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await this.redisService.set(cartKey, updatedCart, 0);
 
     console.log(
       `✅ Carrinho ${id} atualizado no Redis em ${Date.now() - startTime}ms`,
@@ -132,20 +131,20 @@ export class CartService {
     const startTime = Date.now();
 
     const cartKey = `cart:${id}`;
-    const cart = await this.cacheManager.get<Cart>(cartKey);
+    const cart = await this.redisService.get(cartKey);
 
     if (!cart) {
       console.log(`❌ Carrinho ${id} não encontrado para remoção`);
       return null;
     }
 
-    await this.cacheManager.del(cartKey);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await this.redisService.del(cartKey);
 
     const cartsListKey = 'carts:list';
-    const cartIds =
-      (await this.cacheManager.get<number[]>(cartsListKey)) || [];
+    const cartIds = (await this.redisService.get(cartsListKey)) || [];
     const updatedCartIds = cartIds.filter((cartId) => cartId !== id);
-    await this.cacheManager.set(cartsListKey, updatedCartIds, 0);
+    await this.redisService.set(cartsListKey, updatedCartIds, 0);
 
     console.log(
       `✅ Carrinho ${id} removido do Redis em ${Date.now() - startTime}ms`,
@@ -156,12 +155,11 @@ export class CartService {
 
   async getCacheStats(): Promise<any> {
     const cartsListKey = 'carts:list';
-    const cartIds =
-      (await this.cacheManager.get<number[]>(cartsListKey)) || [];
+    const cartIds = (await this.redisService.get(cartsListKey)) || [];
 
     const carts: Cart[] = [];
     for (const id of cartIds) {
-      const cart = await this.cacheManager.get<Cart>(`cart:${id}`);
+      const cart = await this.redisService.get(`cart:${id}`);
       if (cart) carts.push(cart);
     }
 
