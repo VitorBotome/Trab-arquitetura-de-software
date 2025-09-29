@@ -70,6 +70,78 @@ $ mau deploy
 
 With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
+## Redis, Timeout e Circuit Breaker – Guia de Testes
+
+### O que foi implementado
+- Cache de produtos e carrinho no Redis Cloud.
+- Serviço único de Redis (`RedisService`) usado por produtos e carrinho.
+- Delay artificial (~50ms) para simular latência em produtos e carrinho.
+- Timeout configurável nas operações do Redis (`set`, `get`, `del`). Padrão: 200ms via `REDIS_TIMEOUT_MS`.
+- Circuit Breaker simples no `RedisService`:
+  - Abre após 3 falhas consecutivas.
+  - Enquanto aberto, falha imediatamente as operações.
+  - Após 5s, entra em meia-abertura (1 tentativa). Se der certo, fecha; se falhar, reabre.
+
+### Como iniciar o servidor
+```powershell
+cd server
+npm install
+npm run start
+```
+
+Para ajustar o timeout (em ms):
+```powershell
+# Ex.: 200ms (padrão)
+$env:REDIS_TIMEOUT_MS=200; npm run start
+
+# Forçar timeouts para demonstrar o circuit breaker (ex.: 1ms)
+$env:REDIS_TIMEOUT_MS=1; npm run start
+```
+
+### Testes com REST Client (VS Code)
+
+1) Produtos – `server/src/products/product.http`
+   - Envie “Listar produtos” e depois “Listar produtos NOVAMENTE”.
+     - Esperado: 1ª vez -> MISS; 2ª vez -> HIT; chaves `products:all` e `product:1` aparecem após buscar por id.
+   - Envie “Buscar produto 1” e “Buscar produto 1 NOVAMENTE”.
+     - Esperado: MISS -> HIT de `product:1`.
+   - Envie “GET /products/debug/redis”.
+     - Esperado: listar chaves relacionadas (`products:all`, `product:1`).
+
+2) Carrinho – `server/src/cart/cart.http`
+   - Envie “Create”. Depois “list cart”. Depois “GET /cart/{id}”.
+     - Esperado: chaves `cart:{id}` e `carts:list` no Redis.
+   - Opcional: “Delete” e validar remoção.
+   - Envie “GET /cart/stats/cache” para ver estatísticas simples (ids e chaves).
+
+### Como validar Timeout e Circuit Breaker
+
+1) Forçando erro com timeout muito baixo
+```powershell
+cd server
+$env:REDIS_TIMEOUT_MS=1; npm run start
+```
+Com o servidor rodando, no REST Client execute “Listar produtos” algumas vezes em sequência. No console você deverá ver logs como:
+- `Timeout 1ms em operação Redis: GET/SET/SETEX`
+- Após 3 falhas: `🚫 Circuit Breaker ABERTO por falhas consecutivas`
+- Enquanto aberto: `Circuito aberto - bloqueando operação Redis: ...`
+- Após ~5s: `⚠️ Circuit Breaker em meia-abertura` (se a tentativa falhar, reabre; se der certo, fecha com `✅ Circuit Breaker fechado após sucesso em meia-abertura`).
+
+2) Voltando ao normal
+```powershell
+# Reinicie com timeout adequado
+$env:REDIS_TIMEOUT_MS=200; npm run start
+```
+Repita os requests de produtos e carrinho. Esperado: MISS -> HIT, sem abrir o circuito.
+
+### Dicas
+- Evite rodar múltiplas instâncias do servidor (erro EADDRINUSE na porta 3000). Se ocorrer:
+```powershell
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+```
+- As credenciais do Redis estão no código para fins didáticos. Em produção, use variáveis de ambiente.
+
 ## Resources
 
 Check out a few resources that may come in handy when working with NestJS:
