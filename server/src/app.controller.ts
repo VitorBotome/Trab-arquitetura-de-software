@@ -9,4 +9,9 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @Get('debug')
+  async getDebugInfo() {
+    return await this.appService.getDebugInfo();
+  }
 }

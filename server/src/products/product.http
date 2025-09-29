@@ -1,0 +1,23 @@
+### 1. Listar produtos (Cache MISS)
+GET http://localhost:3000/products
+
+### 2. Listar produtos NOVAMENTE (Cache HIT)  
+GET http://localhost:3000/products
+
+### 3. Buscar produto 1 (Cache MISS)
+GET http://localhost:3000/products/1
+
+### 4. Buscar produto 1 NOVAMENTE (Cache HIT)
+GET http://localhost:3000/products/1
+
+### 5. Atualizar produto (invalida cache)
+PATCH http://localhost:3000/products/1
+Content-Type: application/json
+
+{
+  "name": "Product 1 Updated",
+  "price": 150
+}
+
+### 6. Buscar produto 1 (Cache MISS - foi invalidado)
+GET http://localhost:3000/products/1

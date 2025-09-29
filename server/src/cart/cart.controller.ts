@@ -9,26 +9,99 @@ export class CartController {
 
   @Post()
   async create(@Body() createCartDto: CreateCartDto) {
-    return await this.cartService.create(createCartDto);
+    const startTime = Date.now();
+    const result = await this.cartService.create(createCartDto);
+    const endTime = Date.now();
+
+    return {
+      ...result,
+      responseTime: `${endTime - startTime}ms`,
+      message: 'Carrinho criado com sucesso no Redis',
+      storedIn: 'Redis Cloud'
+    };
   }
 
   @Get()
-  findAll() {
-    return this.cartService.findAll();
+  async findAll() {
+    const startTime = Date.now();
+    const result = await this.cartService.findAll();
+    const endTime = Date.now();
+
+    return {
+      carts: result,
+      responseTime: `${endTime - startTime}ms`,
+      count: result.length,
+      storedIn: 'Redis Cloud',
+      message: `Recuperados ${result.length} carrinhos do Redis`
+    };
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.cartService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    const startTime = Date.now();
+    const result = await this.cartService.findOne(+id);
+    const endTime = Date.now();
+
+    if (!result) {
+      return {
+        message: 'Carrinho não encontrado no Redis',
+        responseTime: `${endTime - startTime}ms`
+      };
+    }
+
+    return {
+      ...result,
+      responseTime: `${endTime - startTime}ms`,
+      storedIn: 'Redis Cloud',
+      message: 'Carrinho recuperado do Redis'
+    };
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCartDto: UpdateCartDto) {
-    return this.cartService.update(+id, updateCartDto);
+  async update(@Param('id') id: string, @Body() updateCartDto: UpdateCartDto) {
+    const startTime = Date.now();
+    const result = await this.cartService.update(+id, updateCartDto);
+    const endTime = Date.now();
+
+    if (!result) {
+      return {
+        message: 'Carrinho não encontrado no Redis',
+        responseTime: `${endTime - startTime}ms`
+      };
+    }
+
+    return {
+      ...result,
+      responseTime: `${endTime - startTime}ms`,
+      message: 'Carrinho atualizado no Redis',
+      storedIn: 'Redis Cloud'
+    };
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.cartService.remove(+id);
+  async remove(@Param('id') id: string) {
+    const startTime = Date.now();
+    const result = await this.cartService.remove(+id);
+    const endTime = Date.now();
+
+    if (!result) {
+      return {
+        message: 'Carrinho não encontrado no Redis',
+        responseTime: `${endTime - startTime}ms`
+      };
+    }
+
+    return {
+      ...result,
+      responseTime: `${endTime - startTime}ms`,
+      message: 'Carrinho removido do Redis',
+      storedIn: 'Redis Cloud'
+    };
+  }
+
+  // Nova rota para estatísticas do cache
+  @Get('stats/cache')
+  async getCacheStats() {
+    return await this.cartService.getCacheStats();
   }
 }

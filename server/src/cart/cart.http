@@ -1,3 +1,5 @@
+# Instalar extensão REST Client para testar rotas
+
 ### list cart
 
 GET http://localhost:3000/cart
@@ -10,17 +12,34 @@ POST http://localhost:3000/cart
 Content-Type: application/json
 
 {
-    "name": "arthur",
+  "name": "Arthur",
   "email": "arthur@gmail.com",
-  "orderDate":"2025-02-01",
+  "orderDate": "2025-02-01",
   "items": [
     {
-      "product": "Camisa",
+      "product": "Smartphone",
       "price": 100,
       "quantity": 2
     },
     {
-      "product": "Bolsa",
+      "product": "Notebook",
+      "price": 250,
+      "quantity": 1
+    }
+  ]
+}
+
+###  Criar Carrinho 2 
+POST http://localhost:3000/cart
+Content-Type: application/json
+
+{
+  "name": "Maria",
+  "email": "maria@email.com", 
+  "orderDate": "2025-02-02",
+  "items": [
+    {
+      "product": "Notebook",
       "price": 250,
       "quantity": 1
     }
